@@ -67,6 +67,24 @@ bool Triangle::hit(const Ray& ray, float tMin, float tMax, HitRecord& record) co
 	return false;
 }
 
+AABBox Triangle::getBoundingBox() const
+{
+	float xMin = std::fminf(m_Vertex[0][0], std::fminf(m_Vertex[1][0], m_Vertex[2][0]));
+	float yMin = std::fminf(m_Vertex[0][1], std::fminf(m_Vertex[1][1], m_Vertex[2][1]));
+	float zMin = std::fminf(m_Vertex[0][2], std::fminf(m_Vertex[1][2], m_Vertex[2][2]));
+
+	float xMax = std::fmaxf(m_Vertex[0][0], std::fmaxf(m_Vertex[1][0], m_Vertex[2][0]));
+	float yMax = std::fmaxf(m_Vertex[0][1], std::fmaxf(m_Vertex[1][1], m_Vertex[2][1]));
+	float zMax = std::fmaxf(m_Vertex[0][2], std::fmaxf(m_Vertex[1][2], m_Vertex[2][2]));
+
+	float delta = 1e-6;
+	xMax = (xMax - xMin > delta) ? xMax : xMin + delta;
+	yMax = (yMax - yMin > delta) ? yMax : yMin + delta;
+	zMax = (zMax - zMin > delta) ? zMax : zMin + delta;
+
+	return AABBox(Vec3f(xMin, yMin, zMin), Vec3f(xMax, yMax, zMax));
+}
+
 void Triangle::getNormal(float alpha, float beta, float gamma, Vec3f& normal) const
 {
 	normal = alpha * m_Normal[0] + beta * m_Normal[1] + gamma * m_Normal[2];

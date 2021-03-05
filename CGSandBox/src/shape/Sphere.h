@@ -10,6 +10,7 @@ public:
 	virtual ~Sphere();
 
 	virtual bool hit(const Ray& ray, float tMin, float tMax, HitRecord& record) const override;
+	virtual AABBox getBoundingBox() const override;
 
 protected:
 	void getUVCoord(const Vec3f& point, float& u, float& v) const;

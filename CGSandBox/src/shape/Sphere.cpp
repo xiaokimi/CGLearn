@@ -63,6 +63,11 @@ bool Sphere::hit(const Ray& ray, float tMin, float tMax, HitRecord& record) cons
 	return false;
 }
 
+AABBox Sphere::getBoundingBox() const
+{
+	return AABBox(m_Center - Vec3f(m_Radius), m_Center + Vec3f(m_Radius));
+}
+
 void Sphere::getUVCoord(const Vec3f& point, float& u, float& v) const
 {
 	Vec3f p = (point - m_Center) / m_Radius;
