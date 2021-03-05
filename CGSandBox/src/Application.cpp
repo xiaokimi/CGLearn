@@ -1,6 +1,5 @@
 #include "cgpch.h"
 
-
 int main()
 {
 

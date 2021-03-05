@@ -17,7 +17,7 @@ project "CGSandBox"
 	objdir("bin-int/" .. outputdir .. "/%{prj.name}")
 
 	pchheader "cgpch.h"
-	pchsource "CGSandBox/src/cgpch.cpp"
+	pchsource "%{prj.name}/src/cgpch.cpp"
 
 	files
 	{
@@ -25,8 +25,14 @@ project "CGSandBox"
 		"%{prj.name}/src/**.cpp"
 	}
 
+	includedirs
+	{
+		"%{prj.name}/src"
+	}
+
 	filter "system:windows"
 		cppdialect "C++17"
+		systemversion "latest"
 
 	filter {"configurations:Debug"}
 		defines {"DEBUG"}
