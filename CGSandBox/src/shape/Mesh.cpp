@@ -59,6 +59,14 @@ Mesh::~Mesh()
 
 bool Mesh::hit(const Ray& ray, float tMin, float tMax, HitRecord& record) const
 {
+	tMin = std::fmaxf(tMin, ray.getTimeMin());
+	tMax = std::fminf(tMax, ray.getTimeMax());
+
+	if (tMin > tMax)
+	{
+		return false;
+	}
+
 	bool hitAnything = false;
 
 	HitRecord tmpRecord;
@@ -78,29 +86,37 @@ bool Mesh::hit(const Ray& ray, float tMin, float tMax, HitRecord& record) const
 
 AABBox Mesh::getBoundingBox() const
 {
+	return AABBox(getPointMin(), getPointMax());
+}
+
+Vec3f Mesh::getPointMin() const
+{
 	float xMin = m_Vertex[0][0];
 	float yMin = m_Vertex[0][1];
 	float zMin = m_Vertex[0][2];
-
-	float xMax = xMin;
-	float yMax = yMin;
-	float zMax = zMin;
 
 	for (int i = 1; i < m_TriangleCount * 3; i++)
 	{
 		xMin = std::fminf(xMin, m_Vertex[i][0]);
 		yMin = std::fminf(yMin, m_Vertex[i][1]);
 		zMin = std::fminf(zMin, m_Vertex[i][2]);
+	}
 
+	return Vec3f(xMin, yMin, zMin);
+}
+
+Vec3f Mesh::getPointMax() const
+{
+	float xMax = m_Vertex[0][0];
+	float yMax = m_Vertex[0][1];
+	float zMax = m_Vertex[0][2];
+
+	for (int i = 1; i < m_TriangleCount * 3; i++)
+	{
 		xMax = std::fmaxf(xMax, m_Vertex[i][0]);
 		yMax = std::fmaxf(yMax, m_Vertex[i][0]);
 		zMax = std::fmaxf(zMax, m_Vertex[i][0]);
 	}
 
-	float delta = 1e-6;
-	xMax = (xMax - xMin > delta) ? xMax : xMin + delta;
-	yMax = (yMax - yMin > delta) ? yMax : yMin + delta;
-	zMax = (zMax - zMin > delta) ? zMax : zMin + delta;
-
-	return AABBox(Vec3f(xMin, yMin, zMin), Vec3f(xMax, yMax, zMax));
+	return  Vec3f(xMax, yMax, zMax);
 }

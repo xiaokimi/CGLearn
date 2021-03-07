@@ -11,6 +11,8 @@ public:
 
 	virtual bool hit(const Ray& ray, float tMin, float tMax, HitRecord& record) const override;
 	virtual AABBox getBoundingBox() const override;
+	virtual Vec3f getPointMin() const override;
+	virtual Vec3f getPointMax() const override;
 
 protected:
 	void getUVCoord(const Vec3f& point, float& u, float& v) const;

@@ -110,6 +110,40 @@ public:
 	Vec3(T xx) : x(xx), y(xx), z(xx) {}
 	Vec3(T xx, T yy, T zz) : x(xx), y(yy), z(zz) {}
 
+	int getMaxExtend() const
+	{
+		if (x > y && x > z)
+		{
+			return 0;
+		}
+		else if (y > z)
+		{
+			return 1;
+		}
+		else
+		{
+			return 2;
+		}
+	}
+
+	static Vec3 min(const Vec3& a, const Vec3& b)
+	{
+		T xMin = std::min(a.x, b.x);
+		T yMin = std::min(a.y, b.y);
+		T zMin = std::min(a.z, b.z);
+
+		return Vec3(xMin, yMin, zMin);
+	}
+
+	static Vec3 max(const Vec3& a, const Vec3& b)
+	{
+		T xMax = std::max(a.x, b.x);
+		T yMax = std::max(a.y, b.y);
+		T zMax = std::max(a.z, b.z);
+
+		return Vec3(xMax, yMax, zMax);
+	}
+
 	const T& operator[](uint8_t i) const
 	{
 		return (&x)[i];
@@ -147,7 +181,7 @@ public:
 
 	Vec3 operator*(T r) const
 	{
-		return Vec3(x * r, y * r, z * r)
+		return Vec3(x * r, y * r, z * r);
 	}
 
 	Vec3 operator/(T r) const

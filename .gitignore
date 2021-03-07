@@ -3,6 +3,9 @@
 !vendor/bin/premake/
 bin-int/
 
+# .ppm
+**.ppm
+
 # Visual Studio files and folder
 .vs/
 **.sln

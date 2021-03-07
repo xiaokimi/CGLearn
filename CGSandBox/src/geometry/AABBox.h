@@ -14,6 +14,7 @@ public:
 
 	Vec3f getPointMin() const;
 	Vec3f getPointMax() const;
+	Vec3f getCentroid() const;
 
 	bool hit(const Ray& ray, float tMin, float tMax) const;
 

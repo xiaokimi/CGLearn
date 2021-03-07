@@ -23,7 +23,7 @@ Sphere::~Sphere()
 bool Sphere::hit(const Ray& ray, float tMin, float tMax, HitRecord& record) const
 {
 	tMin = std::fmaxf(tMin, ray.getTimeMin());
-	tMax = std::fminf(tMax, ray.getTimeBorn());
+	tMax = std::fminf(tMax, ray.getTimeMax());
 
 	if (tMin > tMax)
 	{
@@ -65,7 +65,17 @@ bool Sphere::hit(const Ray& ray, float tMin, float tMax, HitRecord& record) cons
 
 AABBox Sphere::getBoundingBox() const
 {
-	return AABBox(m_Center - Vec3f(m_Radius), m_Center + Vec3f(m_Radius));
+	return AABBox(getPointMin(), getPointMax());
+}
+
+Vec3f Sphere::getPointMin() const
+{
+	return m_Center - Vec3f(m_Radius);
+}
+
+Vec3f Sphere::getPointMax() const
+{
+	return m_Center + Vec3f(m_Radius);
 }
 
 void Sphere::getUVCoord(const Vec3f& point, float& u, float& v) const
