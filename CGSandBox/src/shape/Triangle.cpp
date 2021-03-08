@@ -1,4 +1,3 @@
-#include "cgpch.h"
 #include "Triangle.h"
 
 Triangle::Triangle()
@@ -33,13 +32,13 @@ Triangle::~Triangle()
 
 bool Triangle::hit(const Ray& ray, float tMin, float tMax, HitRecord& record) const
 {
-	tMin = std::fmaxf(tMin, ray.getTimeMin());
-	tMax = std::fminf(tMax, ray.getTimeMax());
-
-	if (tMin > tMax)
+	if (!ray.hit(tMin, tMax))
 	{
 		return false;
 	}
+
+	tMin = std::fmaxf(tMin, ray.getTimeMin());
+	tMax = std::fminf(tMax, ray.getTimeMax());
 
 	Vec3f E1 = m_Vertex[1] - m_Vertex[0];
 	Vec3f E2 = m_Vertex[2] - m_Vertex[0];
@@ -59,7 +58,7 @@ bool Triangle::hit(const Ray& ray, float tMin, float tMax, HitRecord& record) co
 		record.p = ray.getPosition(t);
 
 		getNormal(alpha, beta, gamma, record.normal);
-		getUVCoord(alpha, beta, gamma, record.u, record.v);
+		getUVCoord(alpha, beta, gamma, record.uv);
 
 		return true;
 	}
@@ -95,8 +94,8 @@ void Triangle::getNormal(float alpha, float beta, float gamma, Vec3f& normal) co
 	normal = alpha * m_Normal[0] + beta * m_Normal[1] + gamma * m_Normal[2];
 }
 
-void Triangle::getUVCoord(float alpha, float beta, float gamma, float& u, float& v) const
+void Triangle::getUVCoord(float alpha, float beta, float gamma, Vec2f& uv) const
 {
-	u = alpha * m_TexCoord[0][0] + beta * m_TexCoord[1][0] + gamma * m_TexCoord[2][0];
-	v = alpha * m_TexCoord[0][1] + beta * m_TexCoord[1][1] + gamma * m_TexCoord[2][1];
+	uv[0] = alpha * m_TexCoord[0][0] + beta * m_TexCoord[1][0] + gamma * m_TexCoord[2][0];
+	uv[1] = alpha * m_TexCoord[0][1] + beta * m_TexCoord[1][1] + gamma * m_TexCoord[2][1];
 }

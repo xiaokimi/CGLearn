@@ -1,4 +1,3 @@
-#include "cgpch.h"
 #include "world/Renderer.h"
 #include "shape/Sphere.h"
 
@@ -9,7 +8,7 @@ int main()
 	int width = 400;
 	int height = 400;
 
-	Vec3f lookfrom(0, 0, 1.0f);
+	Vec3f lookfrom(0, 0, 5.0f);
 	Vec3f lookat(0);
 	Vec3f vup(0, 1.0f, 0);
 	float vfov = 90.0f;
@@ -19,12 +18,15 @@ int main()
 	Renderer renderer(width, height);
 	Scene scene(width, height);
 
-	int nCount = 2;
-	Object** objectList = new Object*[nCount];
-	objectList[0] = new Sphere(Vec3f(-1.0f, 0, -1.0f), 1.0f);
-	objectList[1] = new Sphere(Vec3f(1.0f, 0, -1.0f), 1.0f);
+	std::vector<Object*> objectList;
+	objectList.push_back(new Sphere(Vec3f(-1.0f, 0, -1.0f), 1.0f));
+	objectList.push_back(new Sphere(Vec3f(-0.9f, 0, -1.0f), 1.0f));
+	objectList.push_back(new Sphere(Vec3f(-0.8f, 0, -1.0f), 1.0f));
+	objectList.push_back(new Sphere(Vec3f(-0.7f, 0, -1.0f), 1.0f));
 
-	scene.setObjectList(*objectList, nCount);
+	objectList.push_back(new Sphere(Vec3f(2.0f, 0, -1.0f), 1.0f));
+
+	scene.setObjectList(objectList);
 
 	renderer.render(scene, camera);
 	saveToFile(renderer, "BVH.ppm");
@@ -37,16 +39,16 @@ void saveToFile(const Renderer& renderer, const char* filePath)
 	float gamma = 1.0f / M_GAMMA;
 	int width = renderer.getWidth();
 	int height = renderer.getHeight();
-	const Vec3f* frameBuffer = renderer.getFrameBuffer();
+	const std::vector<Vec3f>& frameBuffer = renderer.getFrameBuffer();
 
 	FILE* fp;
 	errno_t err = fopen_s(&fp, filePath, "wb");
 	fprintf(fp, "P3\n%d %d\n255", width, height);
-	for (int i = 0; i < width * height; i++)
+	for (const auto& color : frameBuffer)
 	{
-		int R = lerp<float>(0.0f, 1.0f, std::powf(frameBuffer[i][0], gamma)) * 255.0f;
-		int G = lerp<float>(0.0f, 1.0f, std::powf(frameBuffer[i][1], gamma)) * 255.0f;
-		int B = lerp<float>(0.0f, 1.0f, std::powf(frameBuffer[i][2], gamma)) * 255.0f;
+		int R = lerp<float>(0.0f, 1.0f, std::powf(color[0], gamma)) * 255.0f;
+		int G = lerp<float>(0.0f, 1.0f, std::powf(color[1], gamma)) * 255.0f;
+		int B = lerp<float>(0.0f, 1.0f, std::powf(color[2], gamma)) * 255.0f;
 		fprintf(fp, "\n%d %d %d", R, G, B);
 	}
 	fclose(fp);

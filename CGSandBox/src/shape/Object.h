@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../geometry/Ray.h"
 #include "../geometry/AABBox.h"
 
 struct HitRecord
@@ -9,9 +8,7 @@ struct HitRecord
 
 	Vec3f p;
 	Vec3f normal;
-
-	float u;
-	float v;
+	Vec2f uv;
 };
 
 class Object

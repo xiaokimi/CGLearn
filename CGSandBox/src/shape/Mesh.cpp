@@ -1,4 +1,3 @@
-#include "cgpch.h"
 #include "Mesh.h"
 
 Mesh::Mesh()
@@ -23,10 +22,7 @@ Mesh::Mesh()
 	m_TexCoord[1] = Vec2f(1, 0);
 	m_TexCoord[2] = Vec2f(0, 1);
 
-	m_TriangleList = new Triangle[1];
-	m_TriangleList[0] = Triangle(m_Vertex, m_Normal, m_TexCoord);
-
-	m_TriangleCount = 1;
+	m_TriangleList.push_back(new Triangle(m_Vertex, m_Normal, m_TexCoord));
 }
 
 Mesh::Mesh(Vec3f* vertex, int* indices, Vec3f* normal, Vec2f* texCoord, int nCount)
@@ -34,9 +30,7 @@ Mesh::Mesh(Vec3f* vertex, int* indices, Vec3f* normal, Vec2f* texCoord, int nCou
 , m_Indices(indices)
 , m_Normal(normal)
 , m_TexCoord(texCoord)
-, m_TriangleCount(nCount)
 {
-	m_TriangleList = new Triangle[nCount];
 	for (int i = 0; i < nCount; i++)
 	{
 		Vec3f triangleVertex[3] = {
@@ -44,7 +38,7 @@ Mesh::Mesh(Vec3f* vertex, int* indices, Vec3f* normal, Vec2f* texCoord, int nCou
 			vertex[indices[i * 3 + 1]],
 			vertex[indices[i * 3 + 2]] };
 
-		m_TriangleList[i] = Triangle(triangleVertex, normal + i * 3, texCoord + i * 3);
+		m_TriangleList.push_back(new Triangle(triangleVertex, normal + i * 3, texCoord + i * 3));
 	}
 }
 
@@ -54,25 +48,29 @@ Mesh::~Mesh()
 	delete[] m_Indices;
 	delete[] m_Normal;
 	delete[] m_TexCoord;
-	delete[] m_TriangleList;
+
+	for (auto triangle : m_TriangleList)
+	{
+		delete triangle;
+	}
 }
 
 bool Mesh::hit(const Ray& ray, float tMin, float tMax, HitRecord& record) const
 {
-	tMin = std::fmaxf(tMin, ray.getTimeMin());
-	tMax = std::fminf(tMax, ray.getTimeMax());
-
-	if (tMin > tMax)
+	if (!ray.hit(tMin, tMax))
 	{
 		return false;
 	}
 
-	bool hitAnything = false;
+	tMin = std::fmaxf(tMin, ray.getTimeMin());
+	tMax = std::fminf(tMax, ray.getTimeMax());
 
+	bool hitAnything = false;
 	HitRecord tmpRecord;
-	for (int i = 0; i < m_TriangleCount; i++)
+
+	for (auto triangle : m_TriangleList)
 	{
-		if (m_TriangleList[0].hit(ray, tMin, tMax, tmpRecord))
+		if (triangle->hit(ray, tMin, tMax, tmpRecord))
 		{
 			hitAnything = true;
 
@@ -95,7 +93,7 @@ Vec3f Mesh::getPointMin() const
 	float yMin = m_Vertex[0][1];
 	float zMin = m_Vertex[0][2];
 
-	for (int i = 1; i < m_TriangleCount * 3; i++)
+	for (int i = 1; i < m_TriangleList.size() * 3; i++)
 	{
 		xMin = std::fminf(xMin, m_Vertex[i][0]);
 		yMin = std::fminf(yMin, m_Vertex[i][1]);
@@ -111,7 +109,7 @@ Vec3f Mesh::getPointMax() const
 	float yMax = m_Vertex[0][1];
 	float zMax = m_Vertex[0][2];
 
-	for (int i = 1; i < m_TriangleCount * 3; i++)
+	for (int i = 1; i < m_TriangleList.size() * 3; i++)
 	{
 		xMax = std::fmaxf(xMax, m_Vertex[i][0]);
 		yMax = std::fmaxf(yMax, m_Vertex[i][0]);

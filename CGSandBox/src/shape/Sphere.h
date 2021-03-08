@@ -15,7 +15,7 @@ public:
 	virtual Vec3f getPointMax() const override;
 
 protected:
-	void getUVCoord(const Vec3f& point, float& u, float& v) const;
+	void getUVCoord(const Vec3f& point, Vec2f& uv) const;
 
 private:
 	Vec3f m_Center;

@@ -1,11 +1,10 @@
-#include "cgpch.h"
 #include "BVH.h"
 
-BVH::BVH(Object* objectList, int nCount, int maxPrimsInNode /*= 1*/, SplitMethod splitMethod /*= SplitMethod::NAIVE*/)
+BVH::BVH(std::vector<Object*> objectList, int maxPrimsInNode /*= 1*/, SplitMethod splitMethod /*= SplitMethod::NAIVE*/)
 : m_MaxPrimsInNode(maxPrimsInNode)
 , m_SplitMethod(splitMethod)
 {
-	m_Root = createBVHNode(objectList, nCount);
+	m_Root = createBVHNode(objectList);
 }
 
 BVH::~BVH()
@@ -18,19 +17,21 @@ bool BVH::hit(const Ray& ray, float tMin, float tMax, HitRecord& record) const
 	return testHit(m_Root, ray, tMin, tMax, record);
 }
 
-BVHNode* BVH::createBVHNode(Object* objectList, int nCount) const
+BVHNode* BVH::createBVHNode(std::vector<Object*> objectList) const
 {
-	if (!objectList || nCount == 0)
+	int nCount = objectList.size();
+
+	if (nCount == 0)
 	{
 		return nullptr;
 	}
 
-	Vec3f pMin = objectList[0].getPointMin();
-	Vec3f pMax = objectList[0].getPointMax();
+	Vec3f pMin = objectList[0]->getPointMin();
+	Vec3f pMax = objectList[0]->getPointMax();
 	for (int i = 1; i < nCount; i++)
 	{
-		pMin = Vec3f::min(pMin, objectList[i].getPointMin());
-		pMax = Vec3f::max(pMax, objectList[i].getPointMax());
+		pMin = Vec3f::min(pMin, objectList[i]->getPointMin());
+		pMax = Vec3f::max(pMax, objectList[i]->getPointMax());
 	}
 
 	BVHNode* node = new BVHNode();
@@ -38,62 +39,95 @@ BVHNode* BVH::createBVHNode(Object* objectList, int nCount) const
 
 	if (nCount <= m_MaxPrimsInNode)
 	{
-		node->objectList = objectList;
-		node->primsNum = nCount;
+		node->objectList = std::move(objectList);
 		return node;
 	}
 	
-	Vec3f centroid = node->bbox.getCentroid();
-	switch (centroid.getMaxExtend())
+	AABBox centroidBox;
+	for (const auto& object : objectList)
 	{
-	case 0:
-	{
-		qsort(objectList, nCount, sizeof(Object*), [](const void* a, const void* b) {
-			Object* obj0 = (Object*)a;
-			Object* obj1 = (Object*)b;
-			if (obj0->getBoundingBox().getCentroid()[0] < obj1->getBoundingBox().getCentroid()[0])
-			{
-				return 1;
-			}
+		centroidBox = AABBox::getUnion(centroidBox, object->getBoundingBox().getCentroid());
+	}
+	int maxExtend = (centroidBox.getPointMax() - centroidBox.getPointMin()).getMaxExtend();
+	std::sort(objectList.begin(), objectList.end(), [=](Object* obj0, Object* obj1) {
+		return obj0->getBoundingBox().getCentroid()[maxExtend] < obj1->getBoundingBox().getCentroid()[maxExtend];
+	});
 
-			return 0;
-		});
+	int middleIndex = 0;
+	switch (m_SplitMethod)
+	{
+	case SplitMethod::NAIVE:
+	{
+		middleIndex = nCount / 2;
 		break;
 	}
-	case 1:
+	case SplitMethod::SAH:
 	{
-		qsort(objectList, nCount, sizeof(Object*), [](const void* a, const void* b) {
-			Object* obj0 = (Object*)a;
-			Object* obj1 = (Object*)b;
-			if (obj0->getBoundingBox().getCentroid()[1] < obj1->getBoundingBox().getCentroid()[1])
+		constexpr int nBuckets = 12;
+		BucketInfo buckets[nBuckets];
+
+		for (const auto& object : objectList)
+		{
+			int b = nBuckets * centroidBox.getOffset(object->getBoundingBox().getCentroid())[maxExtend];
+
+			b = b < 0 ? 0 : b;
+			b = b > nBuckets - 1 ? nBuckets - 1 : b;
+
+			buckets[b].nCount++;
+			buckets[b].box = AABBox::getUnion(buckets[b].box, object->getBoundingBox());
+		}
+
+		float cost[nBuckets - 1];
+		float invMaxArea = 1.0f / node->bbox.getSurfaceArea();
+
+		for (int i = 0; i < nBuckets - 1; i++)
+		{
+			AABBox box0, box1;
+			int count0 = 0, count1 = 0;
+
+			for (int j = 0; j <= i; j++)
 			{
-				return 1;
+				box0 = AABBox::getUnion(box0, buckets[j].box);
+				count0 += buckets[j].nCount;
 			}
 
-			return 0;
-		});
-		break;
-	}
-	case 2:
-	{
-		qsort(objectList, nCount, sizeof(Object*), [](const void* a, const void* b) {
-			Object* obj0 = (Object*)a;
-			Object* obj1 = (Object*)b;
-			if (obj0->getBoundingBox().getCentroid()[2] < obj1->getBoundingBox().getCentroid()[2])
+			for (int j = i + 1; j < nBuckets; j++)
 			{
-				return 1;
+				box1 = AABBox::getUnion(box1, buckets[j].box);
+				count1 += buckets[j].nCount;
 			}
 
-			return 0;
-		});
+			cost[i] = 1 + (count0 * box0.getSurfaceArea() + count1 * box1.getSurfaceArea()) * invMaxArea;
+		}
+
+		float minCost = cost[0];
+		int minSplitBucket = 0;
+
+		for (int i = 1; i < nBuckets - 1; i++)
+		{
+			if (cost[i] < minCost)
+			{
+				minCost = cost[i];
+				minSplitBucket = i;
+			}
+		}
+
+		for (int i = 0; i <= minSplitBucket; i++)
+		{
+			middleIndex += buckets[i].nCount;
+		}
+
 		break;
 	}
 	default:
 		break;
 	}
 
-	node->left = createBVHNode(objectList, nCount / 2);
-	node->right = createBVHNode(objectList + nCount / 2, nCount - nCount / 2);
+	std::vector<Object*> leftObjectList = std::vector<Object*>(objectList.begin(), objectList.begin() + middleIndex);
+	std::vector<Object*> rightObjectList = std::vector<Object*>(objectList.begin() + middleIndex, objectList.end());
+
+	node->left = createBVHNode(leftObjectList);
+	node->right = createBVHNode(rightObjectList);
 	return node;
 }
 
@@ -116,14 +150,14 @@ bool BVH::testHit(BVHNode* node, const Ray& ray, float tMin, float tMax, HitReco
 		return false;
 	}
 
-	if (node->objectList)
+	if (node->objectList.size() > 0)
 	{
 		bool hitAnything = false;
 		HitRecord tmpRecord;
 
-		for (int i = 0; i < node->primsNum; i++)
+		for (const auto& object : node->objectList)
 		{
-			if (node->objectList[i].hit(ray, tMin, tMax, tmpRecord))
+			if (object->hit(ray, tMin, tMax, tmpRecord))
 			{
 				hitAnything = true;
 				tMax = tmpRecord.t;

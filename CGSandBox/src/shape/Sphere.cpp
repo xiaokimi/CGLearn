@@ -1,4 +1,3 @@
-#include "cgpch.h"
 #include "Sphere.h"
 
 Sphere::Sphere()
@@ -44,7 +43,7 @@ bool Sphere::hit(const Ray& ray, float tMin, float tMax, HitRecord& record) cons
 			record.p = ray.getPosition(t);
 			record.normal = (record.p - m_Center) / m_Radius;
 
-			getUVCoord(record.p, record.u, record.v);
+			getUVCoord(record.p, record.uv);
 			return true;
 		}
 
@@ -55,7 +54,7 @@ bool Sphere::hit(const Ray& ray, float tMin, float tMax, HitRecord& record) cons
 			record.p = ray.getPosition(t);
 			record.normal = (record.p - m_Center) / m_Radius;
 
-			getUVCoord(record.p, record.u, record.v);
+			getUVCoord(record.p, record.uv);
 			return true;
 		}
 	}
@@ -78,11 +77,11 @@ Vec3f Sphere::getPointMax() const
 	return m_Center + Vec3f(m_Radius);
 }
 
-void Sphere::getUVCoord(const Vec3f& point, float& u, float& v) const
+void Sphere::getUVCoord(const Vec3f& point, Vec2f& uv) const
 {
 	Vec3f p = (point - m_Center) / m_Radius;
 	float phi = std::atan2f(p[1], p[0]);
 
-	u = phi / (2 * M_PI) + 0.5;
-	v = p[2] * 0.5 + 0.5;
+	uv[0] = phi / (2 * M_PI) + 0.5;
+	uv[1] = p[2] * 0.5 + 0.5;
 }

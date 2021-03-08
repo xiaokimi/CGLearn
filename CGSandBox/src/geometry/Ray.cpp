@@ -1,11 +1,10 @@
-#include "cgpch.h"
 #include "Ray.h"
 
 Ray::Ray()
-: m_Origin(0)
-, m_Direction(0, 0, -1)
-, m_TBorn(0)
-, m_TMin(0)
+: m_Origin(0.0f)
+, m_Direction(0.0f, 0.0f, -1.0f)
+, m_TBorn(0.0f)
+, m_TMin(0.0f)
 , m_TMax(kInfinity)
 {
 
@@ -23,6 +22,16 @@ Ray::Ray(const Vec3f& origin, const Vec3f& direction, float tBorn /*= 0.0f*/, fl
 Ray::~Ray()
 {
 
+}
+
+bool Ray::hit(float tMin, float tMax) const
+{
+	if (tMin > m_TMax || tMax < m_TMin)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 Vec3f Ray::getOrigin() const

@@ -1,4 +1,3 @@
-#include "cgpch.h"
 #include "Camera.h"
 
 Camera::Camera()

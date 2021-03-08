@@ -16,9 +16,6 @@ project "CGSandBox"
 	targetdir("bin/" .. outputdir .. "/%{prj.name}")
 	objdir("bin-int/" .. outputdir .. "/%{prj.name}")
 
-	pchheader "cgpch.h"
-	pchsource "%{prj.name}/src/cgpch.cpp"
-
 	files
 	{
 		"%{prj.name}/src/**.h",

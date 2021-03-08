@@ -16,7 +16,7 @@ public:
 
 private:
 	void getNormal(float alpha, float beta, float gamma, Vec3f& normal) const;
-	void getUVCoord(float alpha, float beta, float gamma, float& u, float& v) const;
+	void getUVCoord(float alpha, float beta, float gamma, Vec2f& uv) const;
 
 private:
 	Vec3f m_Vertex[3];

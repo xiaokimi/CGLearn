@@ -1,5 +1,6 @@
 #pragma once
 
+#include "global.h"
 #include "Triangle.h"
 
 class Mesh : public Object
@@ -21,6 +22,5 @@ private:
 	Vec3f* m_Normal;
 	Vec2f* m_TexCoord;
 
-	Triangle* m_TriangleList;
-	int m_TriangleCount;
+	std::vector<Triangle*> m_TriangleList;
 };

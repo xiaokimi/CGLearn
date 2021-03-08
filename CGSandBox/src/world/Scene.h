@@ -9,7 +9,7 @@ public:
 	Scene(int width, int height);
 	virtual ~Scene();
 
-	void setObjectList(Object** objectList, int nCount);
+	void setObjectList(std::vector<Object*> objectList);
 
 	int getWidth() const;
 	int getHeight() const;
@@ -17,10 +17,13 @@ public:
 	bool hit(const Ray& ray, float tMin, float tMax, HitRecord& record) const;
 
 private:
+	void clear();
+
+private:
 	int m_Width;
 	int m_Height;
 
-	Object* m_ObjectList;
+	std::vector<Object*> m_ObjectList;
 
-	BVH* m_BVH;
+	BVH* m_BVHRoot;
 };

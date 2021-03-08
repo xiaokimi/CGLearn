@@ -1,11 +1,9 @@
-#include "cgpch.h"
 #include "Scene.h"
 
 Scene::Scene()
 : m_Width(100)
 , m_Height(100)
-, m_ObjectList(nullptr)
-, m_BVH(nullptr)
+, m_BVHRoot(nullptr)
 {
 
 }
@@ -13,25 +11,22 @@ Scene::Scene()
 Scene::Scene(int width, int height)
 : m_Width(width)
 , m_Height(height)
-, m_ObjectList(nullptr)
-, m_BVH(nullptr)
+, m_BVHRoot(nullptr)
 {
 
 }
 
 Scene::~Scene()
 {
-	delete[] m_ObjectList;
-	delete m_BVH;
+	clear();
 }
 
-void Scene::setObjectList(Object* objectList, int nCount)
+void Scene::setObjectList(std::vector<Object*> objectList)
 {
-	delete[] m_ObjectList;
-	delete m_BVH;
+	clear();
 
-	m_ObjectList = objectList;
-	m_BVH = new BVH(objectList, nCount);
+	m_ObjectList = std::move(objectList);
+	m_BVHRoot = new BVH(m_ObjectList, 1, SplitMethod::SAH);
 }
 
 int Scene::getWidth() const
@@ -46,10 +41,22 @@ int Scene::getHeight() const
 
 bool Scene::hit(const Ray& ray, float tMin, float tMax, HitRecord& record) const
 {
-	if (!m_BVH)
+	if (!m_BVHRoot)
 	{
 		return false;
 	}
 
-	return (m_BVH->hit(ray, tMin, tMax, record));
+	return (m_BVHRoot->hit(ray, tMin, tMax, record));
+}
+
+void Scene::clear()
+{
+	for (auto object : m_ObjectList)
+	{
+		delete object;
+	}
+	m_ObjectList.clear();
+
+	delete m_BVHRoot;
+	m_BVHRoot = nullptr;
 }

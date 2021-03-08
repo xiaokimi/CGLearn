@@ -12,7 +12,7 @@ public:
 
 	int getWidth() const;
 	int getHeight() const;
-	const Vec3f* getFrameBuffer() const;
+	[[nodiscard]] const std::vector<Vec3f>& getFrameBuffer() const;
 
 	void render(const Scene& scene, const Camera& camera);
 
@@ -25,8 +25,7 @@ private:
 	int m_Height;
 	int m_MaxDepth;
 
-	Vec3f* m_FrameBuffer;
+	std::vector<Vec3f> m_FrameBuffer;
 
-	int m_PixelRaySize;
-	Vec2f* m_PixelUVs;
+	std::vector<Vec2f> m_PixelUVs;
 };
