@@ -1,54 +1,32 @@
 #include "Mesh.h"
+#include "../utils/FileUtils.h"
+#include "../material/Material.h"
 
 Mesh::Mesh()
+: m_Area(0.0f)
 {
-	m_Vertex = new Vec3f[3];
-	m_Vertex[0] = Vec3f(0);
-	m_Vertex[1] = Vec3f(1, 0, 0);
-	m_Vertex[2] = Vec3f(0, 1, 0);
 
-	m_Indices = new int[3];
-	m_Indices[0] = 0;
-	m_Indices[1] = 1;
-	m_Indices[2] = 2;
-
-	m_Normal = new Vec3f[3];
-	m_Normal[0] = Vec3f(0, 0, -1);
-	m_Normal[1] = Vec3f(0, 0, -1);
-	m_Normal[2] = Vec3f(0, 0, -1);
-
-	m_TexCoord = new Vec2f[3];
-	m_TexCoord[0] = Vec2f(0);
-	m_TexCoord[1] = Vec2f(1, 0);
-	m_TexCoord[2] = Vec2f(0, 1);
-
-	m_TriangleList.push_back(new Triangle(m_Vertex, m_Normal, m_TexCoord));
 }
 
-Mesh::Mesh(Vec3f* vertex, int* indices, Vec3f* normal, Vec2f* texCoord, int nCount)
-: m_Vertex(vertex)
-, m_Indices(indices)
-, m_Normal(normal)
-, m_TexCoord(texCoord)
+Mesh::Mesh(const std::vector<Vertex>&& vertex, const std::shared_ptr<Material>& material)
+: m_Vertex(std::move(vertex))
+, m_Material(material)
 {
-	for (int i = 0; i < nCount; i++)
-	{
-		Vec3f triangleVertex[3] = {
-			vertex[indices[i * 3]],
-			vertex[indices[i * 3 + 1]],
-			vertex[indices[i * 3 + 2]] };
+	initTriangleList();
+}
 
-		m_TriangleList.push_back(new Triangle(triangleVertex, normal + i * 3, texCoord + i * 3));
+
+Mesh::Mesh(const std::string& filePath, const std::shared_ptr<Material>& material)
+: m_Material(material)
+{
+	if (FileUtils::loadOBJFile(filePath, m_Vertex))
+	{
+		initTriangleList();
 	}
 }
 
 Mesh::~Mesh()
 {
-	delete[] m_Vertex;
-	delete[] m_Indices;
-	delete[] m_Normal;
-	delete[] m_TexCoord;
-
 	for (auto triangle : m_TriangleList)
 	{
 		delete triangle;
@@ -89,32 +67,88 @@ AABBox Mesh::getBoundingBox() const
 
 Vec3f Mesh::getPointMin() const
 {
-	float xMin = m_Vertex[0][0];
-	float yMin = m_Vertex[0][1];
-	float zMin = m_Vertex[0][2];
+	Vec3f pMin = Vec3f(kInfinity);
 
-	for (int i = 1; i < m_TriangleList.size() * 3; i++)
+	for (const auto& vertex : m_Vertex)
 	{
-		xMin = std::fminf(xMin, m_Vertex[i][0]);
-		yMin = std::fminf(yMin, m_Vertex[i][1]);
-		zMin = std::fminf(zMin, m_Vertex[i][2]);
+		pMin = Vec3f::min(pMin, vertex.position);
 	}
 
-	return Vec3f(xMin, yMin, zMin);
+	return pMin;
 }
 
 Vec3f Mesh::getPointMax() const
 {
-	float xMax = m_Vertex[0][0];
-	float yMax = m_Vertex[0][1];
-	float zMax = m_Vertex[0][2];
+	Vec3f pMax = Vec3f(-kInfinity);
 
-	for (int i = 1; i < m_TriangleList.size() * 3; i++)
+	for (const auto& vertex : m_Vertex)
 	{
-		xMax = std::fmaxf(xMax, m_Vertex[i][0]);
-		yMax = std::fmaxf(yMax, m_Vertex[i][0]);
-		zMax = std::fmaxf(zMax, m_Vertex[i][0]);
+		pMax = Vec3f::max(pMax, vertex.position);
 	}
 
-	return  Vec3f(xMax, yMax, zMax);
+	return pMax;
+}
+
+float Mesh::getArea() const
+{
+	return m_Area;
+}
+
+bool Mesh::hasEmit() const
+{
+	if (m_Material)
+	{
+		return m_Material->hasEmission();
+	}
+
+	return false;
+}
+
+void Mesh::sample(HitRecord& record, float& pdf) const
+{
+	int nSize = m_TriangleList.size();
+	if (nSize == 0)
+	{
+		return;
+	}
+	else if (nSize == 1)
+	{
+		m_TriangleList[0]->sample(record, pdf);
+	}
+	else
+	{
+		int idx = dis(gen) * nSize;
+		idx = lerp(0, nSize - 1, idx);
+		m_TriangleList[idx]->sample(record, pdf);
+	}
+}
+
+std::vector<Object*> Mesh::getPrimitiveList() const
+{
+	std::vector<Object*> objectList;
+	for (Object* object : m_TriangleList)
+	{
+		objectList.push_back(object);
+	}
+
+	return objectList;
+}
+
+void Mesh::initTriangleList()
+{
+	for (int i = 0; i < m_Vertex.size(); i += 3)
+	{
+		std::vector<Vertex> tmpVertex;
+		tmpVertex.push_back(m_Vertex[i]);
+		tmpVertex.push_back(m_Vertex[i + 1]);
+		tmpVertex.push_back(m_Vertex[i + 2]);
+
+		m_TriangleList.push_back(new Triangle(std::move(tmpVertex), m_Material));
+	}
+
+	m_Area = 0.0f;
+	for (const auto& triangle : m_TriangleList)
+	{
+		m_Area += triangle->getArea();
+	}
 }

@@ -9,12 +9,14 @@ public:
 	Scene(int width, int height);
 	virtual ~Scene();
 
-	void setObjectList(std::vector<Object*> objectList);
+	void setObjectList(std::vector<Object*>&& objectList);
 
 	int getWidth() const;
 	int getHeight() const;
 
 	bool hit(const Ray& ray, float tMin, float tMax, HitRecord& record) const;
+
+	void sampleLight(HitRecord& record, float& pdf) const;
 
 private:
 	void clear();

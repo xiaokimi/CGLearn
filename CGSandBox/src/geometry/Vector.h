@@ -183,6 +183,11 @@ public:
 		return (&x)[i];
 	}
 
+	Vec3<T> operator-() const
+	{
+		return Vec3<T>(-x, -y, -z);
+	}
+
 	Vec3<T> operator+(const Vec3<T>& v) const
 	{
 		return Vec3<T>(x + v.x, y + v.y, z + v.z);
@@ -280,6 +285,11 @@ public:
 	friend T length(const Vec3<T>& v)
 	{
 		return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+	}
+
+	friend T lengthSquared(const Vec3<T>& v)
+	{
+		return v.x * v.x + v.y * v.y + v.z * v.z;
 	}
 
 	friend Vec3<T> normalize(const Vec3<T>& v)

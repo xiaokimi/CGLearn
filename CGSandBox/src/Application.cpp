@@ -1,32 +1,44 @@
 #include "world/Renderer.h"
-#include "shape/Sphere.h"
+#include "shape/Mesh.h"
+#include "material/Lambertian.h"
+#include "material/DiffuseLight.h"
+#include "texture/ConstantTexture.h"
 
 void saveToFile(const Renderer& renderer, const char* filePath);
 
 int main()
 {
-	int width = 400;
-	int height = 400;
+	int width = 784;
+	int height = 784;
 
-	Vec3f lookfrom(0, 0, 5.0f);
-	Vec3f lookat(0);
-	Vec3f vup(0, 1.0f, 0);
-	float vfov = 90.0f;
+	Vec3f lookfrom(278.0f, 273.0f, -800.0f);
+	Vec3f lookat(278.0f, 273.0f, 0.0f);
+	Vec3f vup(0.0f, 1.0f, 0.0f);
+	float vfov = 40.0f;
 	float aspect = float(width) / float(height);
 
 	Camera camera(lookfrom, lookat, vup, vfov, aspect);
 	Renderer renderer(width, height);
 	Scene scene(width, height);
 
+	std::shared_ptr<Texture> redConstant = std::make_shared<ConstantTexture>(Vec3f(0.63f, 0.065f, 0.05f));
+	std::shared_ptr<Texture> greenConstant = std::make_shared<ConstantTexture>(Vec3f(0.14f, 0.45f, 0.091f));
+	std::shared_ptr<Texture> whiteConstant = std::make_shared<ConstantTexture>(Vec3f(0.725f, 0.71f, 0.68f));
+
+	std::shared_ptr<Material> red = std::make_shared<Lambertian>(redConstant);
+	std::shared_ptr<Material> green = std::make_shared<Lambertian>(greenConstant);
+	std::shared_ptr<Material> white = std::make_shared<Lambertian>(whiteConstant);
+	std::shared_ptr<Material> light = std::make_shared<DiffuseLight>(Vec3f(47.8348f, 38.5664f, 31.0808f));
+
 	std::vector<Object*> objectList;
-	objectList.push_back(new Sphere(Vec3f(-1.0f, 0, -1.0f), 1.0f));
-	objectList.push_back(new Sphere(Vec3f(-0.9f, 0, -1.0f), 1.0f));
-	objectList.push_back(new Sphere(Vec3f(-0.8f, 0, -1.0f), 1.0f));
-	objectList.push_back(new Sphere(Vec3f(-0.7f, 0, -1.0f), 1.0f));
+	objectList.push_back(new Mesh("res/cornellbox/floor.obj", white));
+	objectList.push_back(new Mesh("res/cornellbox/shortbox.obj", white));
+	objectList.push_back(new Mesh("res/cornellbox/tallbox.obj", white));
+	objectList.push_back(new Mesh("res/cornellbox/left.obj", red));
+	objectList.push_back(new Mesh("res/cornellbox/right.obj", green));
+	objectList.push_back(new Mesh("res/cornellbox/light.obj", light));
 
-	objectList.push_back(new Sphere(Vec3f(2.0f, 0, -1.0f), 1.0f));
-
-	scene.setObjectList(objectList);
+	scene.setObjectList(std::move(objectList));
 
 	renderer.render(scene, camera);
 	saveToFile(renderer, "BVH.ppm");

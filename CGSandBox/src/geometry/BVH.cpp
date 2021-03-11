@@ -4,7 +4,16 @@ BVH::BVH(std::vector<Object*> objectList, int maxPrimsInNode /*= 1*/, SplitMetho
 : m_MaxPrimsInNode(maxPrimsInNode)
 , m_SplitMethod(splitMethod)
 {
-	m_Root = createBVHNode(objectList);
+	std::vector<Object*> primitiveList;
+	for (auto object : objectList)
+	{
+		for (auto prim : object->getPrimitiveList())
+		{
+			primitiveList.push_back(prim);
+		}
+	}
+
+	m_Root = createBVHNode(primitiveList);
 }
 
 BVH::~BVH()
@@ -39,7 +48,7 @@ BVHNode* BVH::createBVHNode(std::vector<Object*> objectList) const
 
 	if (nCount <= m_MaxPrimsInNode)
 	{
-		node->objectList = std::move(objectList);
+		node->objectList = objectList;
 		return node;
 	}
 	
@@ -121,6 +130,11 @@ BVHNode* BVH::createBVHNode(std::vector<Object*> objectList) const
 	}
 	default:
 		break;
+	}
+
+	if (middleIndex == 0 || middleIndex == nCount)
+	{
+		middleIndex = nCount / 2;
 	}
 
 	std::vector<Object*> leftObjectList = std::vector<Object*>(objectList.begin(), objectList.begin() + middleIndex);

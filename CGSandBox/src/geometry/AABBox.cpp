@@ -10,7 +10,7 @@ AABBox::AABBox()
 AABBox::AABBox(const Vec3f& pMin, const Vec3f& pMax)
 : m_PointMin(pMin)
 {
-	float delta = 1e-6;
+	float delta = 1e-3;
 	m_PointMax[0] = (pMax[0] - pMin[0] > delta) ? pMax[0] : pMin[0] + delta;
 	m_PointMax[1] = (pMax[1] - pMin[1] > delta) ? pMax[1] : pMin[1] + delta;
 	m_PointMax[2] = (pMax[2] - pMin[2] > delta) ? pMax[2] : pMin[2] + delta;

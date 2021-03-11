@@ -21,7 +21,7 @@ Scene::~Scene()
 	clear();
 }
 
-void Scene::setObjectList(std::vector<Object*> objectList)
+void Scene::setObjectList(std::vector<Object*>&& objectList)
 {
 	clear();
 
@@ -47,6 +47,35 @@ bool Scene::hit(const Ray& ray, float tMin, float tMax, HitRecord& record) const
 	}
 
 	return (m_BVHRoot->hit(ray, tMin, tMax, record));
+}
+
+
+void Scene::sampleLight(HitRecord& record, float& pdf) const
+{
+	float emitAreaSum = 0.0f;
+	for (const auto& object : m_ObjectList)
+	{
+		if (object->hasEmit())
+		{
+			emitAreaSum += object->getArea();
+		}
+	}
+
+	float p = dis(gen) * emitAreaSum;
+	emitAreaSum = 0.0f;
+
+	for (const auto& object : m_ObjectList)
+	{
+		if (object->hasEmit())
+		{
+			emitAreaSum += object->getArea();
+			if (p < emitAreaSum)
+			{
+				object->sample(record, pdf);
+				break;
+			}
+		}
+	}
 }
 
 void Scene::clear()
