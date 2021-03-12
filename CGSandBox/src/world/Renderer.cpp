@@ -9,7 +9,6 @@ Renderer::Renderer()
 {
 	m_FrameBuffer.resize(m_Width * m_Height);
 	initPixelUVs();
-	initThread();
 }
 
 Renderer::Renderer(int width, int height)
@@ -20,15 +19,11 @@ Renderer::Renderer(int width, int height)
 {
 	m_FrameBuffer.resize(m_Width * m_Height);
 	initPixelUVs();
-	initThread();
 }
 
 Renderer::~Renderer()
 {
-	for (auto t : m_Threads)
-	{
-		delete t;
-	}
+
 }
 
 int Renderer::getWidth() const
@@ -49,6 +44,13 @@ const std::vector<Vec3f>& Renderer::getFrameBuffer() const
 
 void Renderer::render(const Scene& scene, const Camera& camera)
 {
+	m_ThreadExit = false;
+	std::thread threads[MAX_THREAD_SIZE];
+	for (int i = 0; i < MAX_THREAD_SIZE; i++)
+	{
+		threads[i] = std::thread(std::bind(&Renderer::run, this));
+	}
+
 	int index = 0;
 	for (int v = m_Height - 1; v >= 0; v--)
 	{
@@ -72,9 +74,9 @@ void Renderer::render(const Scene& scene, const Camera& camera)
 	}
 
 	m_ThreadExit = true;
-	for (const auto& t : m_Threads)
+	for (int i = 0; i < MAX_THREAD_SIZE; i++)
 	{
-		t->join();
+		threads[i].join();
 	}
 }
 
@@ -90,18 +92,6 @@ void Renderer::initPixelUVs()
 	}
 }
 
-
-void Renderer::initThread()
-{
-	for (int i = 0; i < MAX_THREAD_SIZE; i++)
-	{
-		std::thread* t = new std::thread([=] {
-			run();
-		});
-		m_Threads.push_back(t);
-	}
-}
-
 Vec3f Renderer::castRay(const Scene& scene, const Ray& ray) const
 {
 	HitRecord record;
@@ -112,6 +102,7 @@ Vec3f Renderer::castRay(const Scene& scene, const Ray& ray) const
 			return record.material->getEmission();
 		}
 
+		Vec3f wi = ray.getDirection();
 		Vec3f P = record.vertex.position;
 		Vec3f N = record.vertex.normal;
 
@@ -125,7 +116,7 @@ Vec3f Renderer::castRay(const Scene& scene, const Ray& ray) const
 		Vec3f L_dir = Vec3f(0.0f);
 
 		float theta2 = dot(-wo, lightRecord.vertex.normal);
-		if (theta2 > 0)
+		if (theta2 > 0.0f)
 		{
 			Ray testRay(P, wo);
 			HitRecord testRecord;
@@ -134,7 +125,7 @@ Vec3f Renderer::castRay(const Scene& scene, const Ray& ray) const
 				if (lengthSquared(testRecord.vertex.position - P) - lengthSquared(obj2light) > -0.001f)
 				{
 					Vec3f Li = lightRecord.material->getEmission();
-					Vec3f f_r = record.material->evaluate(ray.getDirection(), wo, record.vertex);
+					Vec3f f_r = record.material->evaluate(wi, wo, record.vertex);
 
 					L_dir = Li * f_r * dot(wo, N) * theta2 / lengthSquared(obj2light) / lightPdf;
 				}
@@ -149,10 +140,10 @@ Vec3f Renderer::castRay(const Scene& scene, const Ray& ray) const
 		Vec3f L_indir = Vec3f(0.0f);
 
 		Ray scattered;
-		if (record.material->scatter(ray.getDirection(), record.vertex, scattered))
+		if (record.material->scatter(wi, record.vertex, scattered))
 		{
 			float pdf = 0.5f / M_PI;
-			Vec3f f_r = record.material->evaluate(ray.getDirection(), scattered.getDirection(), record.vertex);
+			Vec3f f_r = record.material->evaluate(wi, scattered.getDirection(), record.vertex);
 
 			L_indir = castRay(scene, scattered) * f_r * dot(scattered.getDirection(), N) / pdf / m_RussianRoulette;
 		}
@@ -167,16 +158,16 @@ void Renderer::run()
 {
 	while (true)
 	{
-		std::unique_lock l(m_Lock);
+		std::unique_lock l(m_TaskLock);
 
 		if (!m_TaskQueue.empty())
 		{
-			Task t = m_TaskQueue.front();
+			Task task = m_TaskQueue.front();
 			m_TaskQueue.pop();
 			l.unlock();
 
-			t.func(t.data);
-			m_NotFull.notify_all();
+			task.func(task.data);
+			m_ProduceCondition.notify_all();
 		}
 		else if (m_ThreadExit)
 		{
@@ -184,7 +175,7 @@ void Renderer::run()
 		}
 		else
 		{
-			m_NotEmpty.wait_for(l, std::chrono::milliseconds(50));
+			m_ConsumeCondition.wait_for(l, std::chrono::milliseconds(50));
 		}
 	}
 }
@@ -193,18 +184,18 @@ void Renderer::addTask(const Task& task)
 {
 	while (true)
 	{
-		std::unique_lock l(m_Lock);
+		std::unique_lock l(m_TaskLock);
 		if (m_TaskQueue.size() < MAX_QUEUE_SIZE)
 		{
 			m_TaskQueue.push(task);
 			l.unlock();
 
-			m_NotEmpty.notify_all();
+			m_ConsumeCondition.notify_all();
 			break;
 		}
 		else
 		{
-			m_NotFull.wait(l);
+			m_ProduceCondition.wait(l);
 		}
 	}
 }
@@ -215,5 +206,4 @@ void Renderer::castRayTask(const TaskData& taskData)
 
 	std::unique_lock l(m_BuffLock);
 	m_FrameBuffer[taskData.buffIndex] += color;
-	l.unlock();
 }

@@ -3,8 +3,8 @@
 #include "Scene.h"
 #include "Camera.h"
 
-#define  MAX_QUEUE_SIZE 1000
-#define  MAX_THREAD_SIZE 4
+constexpr int MAX_QUEUE_SIZE = 1000;
+constexpr int MAX_THREAD_SIZE = 4;
 
 struct TaskData
 {
@@ -35,8 +35,6 @@ public:
 
 private:
 	void initPixelUVs();
-	void initThread();
-
 	Vec3f castRay(const Scene& scene, const Ray& ray) const;
 
 	void run();
@@ -49,15 +47,14 @@ private:
 	float m_RussianRoulette;
 
 	std::vector<Vec3f> m_FrameBuffer;
-
 	std::vector<Vec2f> m_PixelUVs;
 
 	bool m_ThreadExit;
 	std::queue<Task> m_TaskQueue;
 
-	std::mutex m_Lock;
+	std::mutex m_TaskLock;
 	std::mutex m_BuffLock;
-	std::condition_variable m_NotEmpty;
-	std::condition_variable m_NotFull;
-	std::vector<std::thread*> m_Threads;
+
+	std::condition_variable m_ProduceCondition;
+	std::condition_variable m_ConsumeCondition;
 };
