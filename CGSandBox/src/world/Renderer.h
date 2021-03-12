@@ -35,7 +35,7 @@ public:
 
 private:
 	void initPixelUVs();
-	Vec3f castRay(const Scene& scene, const Ray& ray) const;
+	Vec3f castRay(const Scene& scene, const Ray& ray, int depth) const;
 
 	void run();
 	void addTask(const Task& task);

@@ -92,7 +92,7 @@ void Renderer::initPixelUVs()
 	}
 }
 
-Vec3f Renderer::castRay(const Scene& scene, const Ray& ray) const
+Vec3f Renderer::castRay(const Scene& scene, const Ray& ray, int depth) const
 {
 	HitRecord record;
 	if (scene.hit(ray, 0.001f, kInfinity, record))
@@ -145,7 +145,7 @@ Vec3f Renderer::castRay(const Scene& scene, const Ray& ray) const
 			float pdf = 0.5f / M_PI;
 			Vec3f f_r = record.material->evaluate(wi, scattered.getDirection(), record.vertex);
 
-			L_indir = castRay(scene, scattered) * f_r * dot(scattered.getDirection(), N) / pdf / m_RussianRoulette;
+			L_indir = castRay(scene, scattered, depth + 1) * f_r * dot(scattered.getDirection(), N) / pdf / m_RussianRoulette;
 		}
 
 		return L_dir + L_indir;
@@ -202,7 +202,7 @@ void Renderer::addTask(const Task& task)
 
 void Renderer::castRayTask(const TaskData& taskData)
 {
-	Vec3f color = castRay(*(taskData.scene), taskData.ray) / m_PixelUVs.size();
+	Vec3f color = castRay(*(taskData.scene), taskData.ray, 0) / m_PixelUVs.size();
 
 	std::unique_lock l(m_BuffLock);
 	m_FrameBuffer[taskData.buffIndex] += color;
