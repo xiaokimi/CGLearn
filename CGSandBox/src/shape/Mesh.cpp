@@ -118,7 +118,7 @@ void Mesh::sample(HitRecord& record, float& pdf) const
 	else
 	{
 		int idx = dis(gen) * nSize;
-		idx = lerp(0, nSize - 1, idx);
+		idx = clamp(0, nSize - 1, idx);
 		m_TriangleList[idx]->sample(record, pdf);
 	}
 }

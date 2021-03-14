@@ -24,7 +24,7 @@ static std::mt19937 gen(dev());
 static std::uniform_real_distribution<float> dis(0.0f, 1.0f);
 
 template<typename T>
-T lerp(const T& tMin, const T& tMax, const T& t)
+T clamp(const T& tMin, const T& tMax, const T& t)
 {
 	return std::max<T>(tMin, std::min<T>(tMax, t));
 }

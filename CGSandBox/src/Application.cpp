@@ -3,6 +3,7 @@
 #include "material/Lambertian.h"
 #include "material/DiffuseLight.h"
 #include "texture/ConstantTexture.h"
+#include "geometry/Matrix.h"
 
 void saveToFile(const Renderer& renderer, const char* filePath);
 
@@ -58,9 +59,9 @@ void saveToFile(const Renderer& renderer, const char* filePath)
 	fprintf(fp, "P3\n%d %d\n255", width, height);
 	for (const auto& color : frameBuffer)
 	{
-		int R = lerp<float>(0.0f, 1.0f, std::powf(color[0], gamma)) * 255.0f;
-		int G = lerp<float>(0.0f, 1.0f, std::powf(color[1], gamma)) * 255.0f;
-		int B = lerp<float>(0.0f, 1.0f, std::powf(color[2], gamma)) * 255.0f;
+		int R = clamp<float>(0.0f, 1.0f, std::powf(color[0], gamma)) * 255.0f;
+		int G = clamp<float>(0.0f, 1.0f, std::powf(color[1], gamma)) * 255.0f;
+		int B = clamp<float>(0.0f, 1.0f, std::powf(color[2], gamma)) * 255.0f;
 		fprintf(fp, "\n%d %d %d", R, G, B);
 	}
 	fclose(fp);

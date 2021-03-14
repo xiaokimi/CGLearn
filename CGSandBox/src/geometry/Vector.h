@@ -322,23 +322,23 @@ public:
 		return I - 2 * dot(I, N) * N;
 	}
 
-	friend bool refract(const Vec3<T>& I, const Vec3<T>& N, float ior, Vec3<T>& refracted)
+	friend bool refract(const Vec3<T>& I, const Vec3<T>& N, T ior, Vec3<T>& refracted)
 	{
-		float etai = 1.0f;
-		float etat = ior;
+		T etai = T(1);
+		T etat = ior;
 		Vec3<T> normal = N;
 
-		float cosi = dot(I, N);
-		if (cosi > 0)
+		T cosi = dot(I, N);
+		if (cosi > T(0))
 		{
 			cosi = -cosi;
 			normal = -N;
 			std::swap(etai, etat);
 		}
 
-		float eta = etai / etat;
-		float discriminant = 1.0f - eta * eta * (1.0f - cosi * cosi);
-		if (discriminant > 0.0f)
+		T eta = etai / etat;
+		T discriminant = 1.0f - eta * eta * (1.0f - cosi * cosi);
+		if (discriminant > T(0))
 		{
 			refracted = eta * I - (eta * cosi + std::sqrtf(discriminant)) * normal;
 			return true;

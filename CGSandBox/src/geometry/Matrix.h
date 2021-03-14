@@ -8,11 +8,12 @@ class Matrix44
 {
 public:
 	Matrix44() {}
+
 	Matrix44(
 		T a, T b, T c, T d,
 		T e, T f, T g, T h,
 		T i, T j, T k, T l,
-		T m, T n, T o, T p)
+		T n, T o, T p, T q)
 	{
 		m[0][0] = a;
 		m[0][1] = b;
@@ -29,30 +30,137 @@ public:
 		m[2][2] = k;
 		m[2][3] = l;
 
-		m[3][0] = m;
-		m[3][1] = n;
-		m[3][2] = o;
-		m[3][3] = p;
+		m[3][0] = n;
+		m[3][1] = o;
+		m[3][2] = p;
+		m[3][3] = q;
 	}
 	
-	const T* operator[](uint8_t i) const
+	const T* operator[](int i) const
 	{
 		return m[i];
 	}
 
-	T* operator[](uint8_t i)
+	T* operator[](int i)
 	{
 		return m[i];
 	}
 
-	Matrix44 operator*(const Matrix44& rhs) const
+	bool operator==(const Matrix44<T>& mat) const
 	{
-		Matrix44 mult;
+		for (int i = 0; i < 4; i++)
+		{
+			for (int j = 0; j < 4; j++)
+			{
+				if (m[i][j] != mat[i][j])
+				{
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	bool operator!=(const Matrix44<T>& mat) const
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			for (int j = 0; j < 4; j++)
+			{
+				if (m[i][j] != mat[i][j])
+				{
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	Matrix44<T> operator+(T r) const
+	{
+		return Matrix44(
+			m[0][0] + r, m[0][1] + r, m[0][2] + r, m[0][3] + r,
+			m[1][0] + r, m[1][1] + r, m[1][2] + r, m[1][3] + r,
+			m[2][0] + r, m[2][1] + r, m[2][2] + r, m[2][3] + r,	
+			m[3][0] + r, m[3][1] + r, m[3][2] + r, m[3][3] + r);
+	}
+
+	Matrix44<T> operator+(const Matrix44<T>& mat) const
+	{
+		return Matrix44(
+			m[0][0] + mat[0][0], 
+			m[0][1] + mat[0][1], 
+			m[0][2] + mat[0][2],
+			m[0][3] + mat[0][3],
+			
+			m[1][0] + mat[1][0],
+			m[1][1] + mat[1][1],
+			m[1][2] + mat[1][2],
+			m[1][3] + mat[1][3],
+
+			m[2][0] + mat[2][0],
+			m[2][1] + mat[2][1],
+			m[2][2] + mat[2][2],
+			m[2][3] + mat[2][3],
+
+			m[3][0] + mat[3][0],
+			m[3][1] + mat[3][1],
+			m[3][2] + mat[3][2],
+			m[3][3] + mat[3][3]);
+	}
+
+	Matrix44<T> operator-(T r) const
+	{
+		return Matrix44(
+			m[0][0] - r, m[0][1] - r, m[0][2] - r, m[0][3] - r,
+			m[1][0] - r, m[1][1] - r, m[1][2] - r, m[1][3] - r,
+			m[2][0] - r, m[2][1] - r, m[2][2] - r, m[2][3] - r,
+			m[3][0] - r, m[3][1] - r, m[3][2] - r, m[3][3] - r);
+	}
+
+	Matrix44<T> operator-(const Matrix44<T>& mat) const
+	{
+		return Matrix44(
+			m[0][0] - mat[0][0],
+			m[0][1] - mat[0][1],
+			m[0][2] - mat[0][2],
+			m[0][3] - mat[0][3],
+
+			m[1][0] - mat[1][0],
+			m[1][1] - mat[1][1],
+			m[1][2] - mat[1][2],
+			m[1][3] - mat[1][3],
+
+			m[2][0] - mat[2][0],
+			m[2][1] - mat[2][1],
+			m[2][2] - mat[2][2],
+			m[2][3] - mat[2][3],
+
+			m[3][0] - mat[3][0],
+			m[3][1] - mat[3][1],
+			m[3][2] - mat[3][2],
+			m[3][3] - mat[3][3]);
+	}
+
+	Matrix44<T> operator*(T r) const
+	{
+		return Matrix44(
+			m[0][0] * r, m[0][1] * r, m[0][2] * r, m[0][3] * r,
+			m[1][0] * r, m[1][1] * r, m[1][2] * r, m[1][3] * r,
+			m[2][0] * r, m[2][1] * r, m[2][2] * r, m[2][3] * r,
+			m[3][0] * r, m[3][1] * r, m[3][2] * r, m[3][3] * r);
+	}
+
+	Matrix44<T> operator*(const Matrix44<T>& rhs) const
+	{
+		Matrix44<T> mult;
 
 #if 0
-		for (uint8_t i = 0; i < 4; ++i)
+		for (int i = 0; i < 4; ++i)
 		{
-			for (uint8_t j = 0; j < 4; ++j)
+			for (int j = 0; j < 4; ++j)
 			{
 				mult[i][j] = m[i][0] * rhs[0][j] +
 							 m[i][1] * rhs[1][j] +
@@ -63,7 +171,7 @@ public:
 #else
 		const T* __restrict ap  = &m[0][0];
 		const T* __restrict bp  = &rhs.m[0][0];
-		T* __restrict cp		= &mult.m[0][0];
+		T* __restrict cp        = &mult.m[0][0];
 
 		T a0, a1, a2, a3;
 
@@ -111,9 +219,29 @@ public:
 		return mult;
 	}
 
+	Matrix44<T> operator/(T r) const
+	{
+		r = T(1) / r;
+
+		return Matrix44(
+			m[0][0] * r, m[0][1] * r, m[0][2] * r, m[0][3] * r,
+			m[1][0] * r, m[1][1] * r, m[1][2] * r, m[1][3] * r,
+			m[2][0] * r, m[2][1] * r, m[2][2] * r, m[2][3] * r,
+			m[3][0] * r, m[3][1] * r, m[3][2] * r, m[3][3] * r);
+	}
+
+	friend Matrix44<T> operator+(T r, const Matrix44<T>& mat)
+	{
+		return Matrix44(
+			mat[0][0] + r, mat[0][1] + r, mat[0][2] + r, mat[0][3] + r,
+			mat[1][0] + r, mat[1][1] + r, mat[1][2] + r, mat[1][3] + r,
+			mat[2][0] + r, mat[2][1] + r, mat[2][2] + r, mat[2][3] + r,
+			mat[3][0] + r, mat[3][1] + r, mat[3][2] + r, mat[3][3] + r);
+	}
+
 #ifdef ROW_MAJOR
 
-	friend Vec3<T> operator*(const Vec3<T>& v, const Matrix44& mat)
+	friend Vec3<T> operator*(const Vec3<T>& v, const Matrix44<T>& mat)
 	{
 		T x, y, z, w;
 
@@ -127,7 +255,7 @@ public:
 
 #else
 
-	friend Vec3<T> operator*(const Matrix44& mat, const Vec3<T>& v)
+	friend Vec3<T> operator*(const Matrix44<T>& mat, const Vec3<T>& v)
 	{
 		T x, y, z, w;
 
@@ -141,14 +269,14 @@ public:
 
 #endif
 
-	friend Matrix44 transposed(const Matrix44& mat)
+	friend Matrix44<T> transpose(const Matrix44<T>& mat)
 	{
 #if 0
-		Matrix44 transpMat;
+		Matrix44<T> transpMat;
 
-		for (uint8_t i = 0; i < 4; ++i)
+		for (int i = 0; i < 4; ++i)
 		{
-			for (uint8_t j = 0; j < 4; ++j)
+			for (int j = 0; j < 4; ++j)
 			{
 				transpMat[i][j] = m[j][i];
 			}
@@ -164,11 +292,11 @@ public:
 #endif
 	}
 
-	friend Matrix44 inverse(const Matrix44& mat)
+	friend Matrix44<T> inverse(const Matrix44<T>& mat)
 	{
 		int i, j, k;
-		Matrix44 s;
-		Matrix44 t(mat);
+		Matrix44<T> s;
+		Matrix44<T> t(mat);
 		
 		// forward elimination
 		for (i = 0; i < 3; i++)
@@ -198,7 +326,7 @@ public:
 				}
 			}
 
-			if (pivotsize == 0)
+			if (pivotsize == T(0))
 			{
 				// Cannot invert singular matrix
 				return Matrix44();
@@ -264,35 +392,123 @@ public:
 		return s;
 	}
 
-	friend std::ostream& operator<<(std::ostream& s, const Matrix44& mat)
+	friend Matrix44<T> translate(const Matrix44<T>& mat, const Vec3<T>& v)
 	{
-		std::ios_base::fmtflags oldFlags = s.flags();
+		Matrix44<T> trans;
+
+#ifdef ROW_MAJOR
+
+		trans[3][0] = v[0];
+		trans[3][1] = v[1];
+		trans[3][2] = v[2];
+
+		return mat * trans;
+
+#else
+
+		trans[0][3] = v[0];
+		trans[1][3] = v[1];
+		trans[2][3] = v[2];
+
+		return trans * mat;
+
+#endif
+	}
+
+	friend Matrix44<T> scale(const Matrix44<T>& mat, const Vec3<T>& v)
+	{
+		Matrix44<T> s;
+		s[0][0] = v[0];
+		s[1][1] = v[1];
+		s[2][2] = v[2];
+
+#ifdef ROW_MAJOR
+
+		return mat * s;
+
+#else
+
+		return s * mat;
+
+#endif
+	}
+
+	friend Matrix44<T> rotate(const Matrix44<T>& mat, const Vec3<T>& v, T angle)
+	{
+		Vec3<T> a = normalize(v);
+		
+		T degree = M_PI * angle / 180;
+		T c = std::cos(degree);
+		T s = std::sin(degree);
+
+		Vec3<T> X(
+			a[0] * a[0] * (1 - c) + c,
+			a[0] * a[1] * (1 - c) + a[2] * s,
+			a[0] * a[2] * (1 - c) - a[1] * s);
+
+		Vec3<T> Y(
+			a[0] * a[1] * (1 - c) - a[2] * s,
+			a[1] * a[1] * (1 - c) + c,
+			a[1] * a[2] * (1 - c) + a[0] * s);
+
+		Vec3<T> Z(
+			a[0] * a[2] * (1 - c) + a[1] * s,
+			a[1] * a[2] * (1 - c) - a[0] * s,
+			a[2] * a[2] * (1 - c) + c);
+
+#ifdef ROW_MAJOR
+
+		Matrix44<T> rota(
+			X[0], X[1], X[2], T(0),
+			Y[0], Y[1], Y[2], T(0),
+			Z[0], Z[1], Z[2], T(0),
+			T(0), T(0), T(0), T(1));
+
+		return mat * rota;
+
+#else
+
+		Matrix44<T> rota(
+			X[0], Y[0], Z[0], T(0),
+			X[1], Y[1], Z[1], T(0),
+			X[2], Y[2], Z[2], T(0),
+			T(0), T(0), T(0), T(1));
+
+		return rota * mat;
+
+#endif 
+	}
+
+
+	friend std::ostream& operator<<(std::ostream& os, const Matrix44<T>& mat)
+	{
+		std::ios_base::fmtflags oldFlags = os.flags();
 		int width = 12;
-		s.precision(5);
-		s.setf(std::ios_base::fixed);
+		os.precision(5);
+		os.setf(std::ios_base::fixed);
 
-		s << "(" << std::setw(width) << mat[0][0] <<
-			 " " << std::setw(width) << mat[0][1] <<
-			 " " << std::setw(width) << mat[0][2] <<
-			 " " << std::setw(width) << mat[0][3] << "\n" <<
+		os << "(" << std::setw(width) << mat[0][0] <<
+		      " " << std::setw(width) << mat[0][1] <<
+		      " " << std::setw(width) << mat[0][2] <<
+		      " " << std::setw(width) << mat[0][3] << "\n" <<
 
-			 " " << std::setw(width) << mat[1][0] <<
-			 " " << std::setw(width) << mat[1][1] <<
-			 " " << std::setw(width) << mat[1][2] <<
-			 " " << std::setw(width) << mat[1][3] << "\n" <<
+		      " " << std::setw(width) << mat[1][0] <<
+		      " " << std::setw(width) << mat[1][1] <<
+		      " " << std::setw(width) << mat[1][2] <<
+		      " " << std::setw(width) << mat[1][3] << "\n" <<
 
-			 " " << std::setw(width) << mat[2][0] <<
-			 " " << std::setw(width) << mat[2][1] <<
-			 " " << std::setw(width) << mat[2][2] <<
-			 " " << std::setw(width) << mat[2][3] << "\n" <<
+		      " " << std::setw(width) << mat[2][0] <<
+		      " " << std::setw(width) << mat[2][1] <<
+		      " " << std::setw(width) << mat[2][2] <<
+		      " " << std::setw(width) << mat[2][3] << "\n" <<
+		
+		      " " << std::setw(width) << mat[3][0] <<
+		      " " << std::setw(width) << mat[3][1] <<
+		      " " << std::setw(width) << mat[3][2] <<
+		      " " << std::setw(width) << mat[3][3] << ")\n";
 
-			 " " << std::setw(width) << mat[3][0] <<
-			 " " << std::setw(width) << mat[3][1] <<
-			 " " << std::setw(width) << mat[3][2] <<
-			 " " << std::setw(width) << mat[3][3] << ")\n";
-
-		s.flags(oldFlags);
-		return s;
+		os.flags(oldFlags);
+		return os;
 	}
 
 private:
