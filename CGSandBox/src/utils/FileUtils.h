@@ -3,13 +3,14 @@
 #include "StringUtils.h"
 #include "../geometry/Vector.h"
 
-struct Vertex;
+struct Face;
+enum class FaceType;
 
 class FileUtils
 {
 public:
-	static bool loadOBJFile(const std::string& filePath, std::vector<Vertex>& vertex);
+	static bool loadOBJFile(const std::string& filePath, std::vector<Vec3f>& vertices, std::vector<Vec3f>& normals, std::vector<Vec2f>& texCoords, std::vector<Face>& faces, FaceType& faceType);
 
 private:
-	static void genVerticesFromRawOBJ(const std::string& in, const std::vector<Vec3f>& positions, const std::vector<Vec3f>& normals, const std::vector<Vec2f>& texCoords, std::vector<Vertex>& vertex);
+	static void genVerticesFromRawOBJ(const std::string& in, std::vector<Face>& faces, FaceType& faceType);
 };

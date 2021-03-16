@@ -97,6 +97,9 @@ Vec3f Renderer::castRay(const Scene& scene, const Ray& ray, int depth) const
 	HitRecord record;
 	if (scene.hit(ray, 0.001f, kInfinity, record))
 	{
+		return Vec3f(1.0f);
+
+
 		if (record.material->hasEmission())
 		{
 			return record.material->getEmission();

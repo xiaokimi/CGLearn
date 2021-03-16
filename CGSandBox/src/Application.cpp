@@ -9,13 +9,20 @@ void saveToFile(const Renderer& renderer, const char* filePath);
 
 int main()
 {
-	int width = 784;
-	int height = 784;
+	//int width = 784;
+	//int height = 784;
+	int width = 200;
+	int height = 200;
 
-	Vec3f lookfrom(278.0f, 273.0f, -800.0f);
-	Vec3f lookat(278.0f, 273.0f, 0.0f);
+
+	//Vec3f lookfrom(278.0f, 273.0f, -800.0f);
+	//Vec3f lookat(278.0f, 273.0f, 0.0f);
+	Vec3f lookfrom(0.5f, 0.5f, 3.0f);
+	Vec3f lookat(0.5f, 0.5f, 0.0f);
+
 	Vec3f vup(0.0f, 1.0f, 0.0f);
-	float vfov = 40.0f;
+	//float vfov = 40.0f;
+	float vfov = 90.0f;
 	float aspect = float(width) / float(height);
 
 	Camera camera(lookfrom, lookat, vup, vfov, aspect);
@@ -23,22 +30,26 @@ int main()
 	Scene scene(width, height);
 
 	std::shared_ptr<Texture> redConstant = std::make_shared<ConstantTexture>(Vec3f(0.63f, 0.065f, 0.05f));
-	std::shared_ptr<Texture> greenConstant = std::make_shared<ConstantTexture>(Vec3f(0.14f, 0.45f, 0.091f));
-	std::shared_ptr<Texture> whiteConstant = std::make_shared<ConstantTexture>(Vec3f(0.725f, 0.71f, 0.68f));
+	//std::shared_ptr<Texture> greenConstant = std::make_shared<ConstantTexture>(Vec3f(0.14f, 0.45f, 0.091f));
+	//std::shared_ptr<Texture> whiteConstant = std::make_shared<ConstantTexture>(Vec3f(0.725f, 0.71f, 0.68f));
 
 	std::shared_ptr<Material> red = std::make_shared<Lambertian>(redConstant);
-	std::shared_ptr<Material> green = std::make_shared<Lambertian>(greenConstant);
-	std::shared_ptr<Material> white = std::make_shared<Lambertian>(whiteConstant);
-	std::shared_ptr<Material> light = std::make_shared<DiffuseLight>(Vec3f(47.8348f, 38.5664f, 31.0808f));
+	//std::shared_ptr<Material> green = std::make_shared<Lambertian>(greenConstant);
+	//std::shared_ptr<Material> white = std::make_shared<Lambertian>(whiteConstant);
+	//std::shared_ptr<Material> light = std::make_shared<DiffuseLight>(Vec3f(47.8348f, 38.5664f, 31.0808f));
+
+	Mesh *mesh = new Mesh("res/cornellbox/cube.obj", red);
+	mesh->loopSubDivide(1);
 
 	std::vector<Object*> objectList;
-	objectList.push_back(new Mesh("res/cornellbox/floor.obj", white));
-	objectList.push_back(new Mesh("res/cornellbox/shortbox.obj", white));
-	objectList.push_back(new Mesh("res/cornellbox/tallbox.obj", white));
-	objectList.push_back(new Mesh("res/cornellbox/left.obj", red));
-	objectList.push_back(new Mesh("res/cornellbox/right.obj", green));
-	objectList.push_back(new Mesh("res/cornellbox/light.obj", light));
-
+	objectList.push_back(mesh);
+	//objectList.push_back(new Mesh("res/cornellbox/floor.obj", white));
+	//objectList.push_back(new Mesh("res/cornellbox/shortbox.obj", white));
+	//objectList.push_back(new Mesh("res/cornellbox/tallbox.obj", white));
+	//objectList.push_back(new Mesh("res/cornellbox/left.obj", red));
+	//objectList.push_back(new Mesh("res/cornellbox/right.obj", green));
+	//objectList.push_back(new Mesh("res/cornellbox/light.obj", light));
+	
 	scene.setObjectList(std::move(objectList));
 
 	renderer.render(scene, camera);

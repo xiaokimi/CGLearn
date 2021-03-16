@@ -1,7 +1,7 @@
 #include "FileUtils.h"
-#include "../shape/Object.h"
+#include "../shape/Mesh.h"
 
-bool FileUtils::loadOBJFile(const std::string& filePath, std::vector<Vertex>& vertex)
+bool FileUtils::loadOBJFile(const std::string& filePath, std::vector<Vec3f>& vertices, std::vector<Vec3f>& normals, std::vector<Vec2f>& texCoords, std::vector<Face>& faces, FaceType& faceType)
 {
 	if (filePath.substr(filePath.size() - 4, 4) != ".obj")
 	{
@@ -13,10 +13,6 @@ bool FileUtils::loadOBJFile(const std::string& filePath, std::vector<Vertex>& ve
 	{
 		return false;
 	}
-
-	std::vector<Vec3f> positions;
-	std::vector<Vec3f> normals;
-	std::vector<Vec2f> texCoords;
 
 	std::string curline;
 	while (std::getline(file, curline))
@@ -31,7 +27,7 @@ bool FileUtils::loadOBJFile(const std::string& filePath, std::vector<Vertex>& ve
 			float y = std::stof(spos[1]);
 			float z = std::stof(spos[2]);
 
-			positions.push_back(Vec3f(x, y, z));
+			vertices.push_back(Vec3f(x, y, z));
 		}
 		else if (tag == "vn")
 		{
@@ -56,7 +52,7 @@ bool FileUtils::loadOBJFile(const std::string& filePath, std::vector<Vertex>& ve
 		}
 		else if (tag == "f")
 		{
-			FileUtils::genVerticesFromRawOBJ(curline, positions, normals, texCoords, vertex);
+			FileUtils::genVerticesFromRawOBJ(curline, faces, faceType);
 		}
 	}
 
@@ -64,84 +60,57 @@ bool FileUtils::loadOBJFile(const std::string& filePath, std::vector<Vertex>& ve
 	return true;
 }
 
-void FileUtils::genVerticesFromRawOBJ(const std::string& in, const std::vector<Vec3f>& positions, const std::vector<Vec3f>& normals, const std::vector<Vec2f>& texCoords, std::vector<Vertex>& vertex)
+void FileUtils::genVerticesFromRawOBJ(const std::string& in, std::vector<Face>& faces, FaceType& faceType)
 {
 	std::vector<std::string> sface, svert;
 	StringUtils::split(StringUtils::tail(in), sface, " ");
-	bool noNormal = false;
 
-	for (int i = 0; i < int(sface.size()); i++)
+	Face face;
+	for (int i = 0; i < int(sface.size()) && i < 3; i++)
 	{
-		int vtype = 0;
-
 		StringUtils::split(sface[i], svert, "/");
 		if (svert.size() == 1)
 		{
-			vtype = 1;
+			faceType = FaceType::TYPE_V;
 		}
 		else if (svert.size() == 2)
 		{
-			vtype = 2;
+			faceType = FaceType::TYPE_V_T;
 		}
 		else if (svert.size() == 3)
 		{
 			if (svert[1] != "")
 			{
-				vtype = 4;
+				faceType = FaceType::TYPE_V_N_T;
 			}
 			else
 			{
-				vtype = 3;
+				faceType = FaceType::TYPE_V_N;
 			}
 		}
 
-		noNormal = (vtype == 1 || vtype == 2);
-
-		if (vtype == 1)
+		//
+		if (faceType == FaceType::TYPE_V)
 		{
-			Vertex v;
-			v.position = StringUtils::getElement(positions, svert[0]);
-
-			vertex.push_back(v);
+			face.faceVertex[i].vIndex = std::stoi(svert[0]);
 		}
-		else if (vtype == 2)
+		else if (faceType == FaceType::TYPE_V_T)
 		{
-			Vertex v;
-			v.position = StringUtils::getElement(positions, svert[0]);
-			v.texCoord = StringUtils::getElement(texCoords, svert[1]);
-
-			vertex.push_back(v);
+			face.faceVertex[i].vIndex = std::stoi(svert[0]);
+			face.faceVertex[i].tIndex = std::stoi(svert[1]);
 		}
-		else if (vtype == 3)
+		else if (faceType == FaceType::TYPE_V_N)
 		{
-			Vertex v;
-			v.position = StringUtils::getElement(positions, svert[0]);
-			v.normal = StringUtils::getElement(normals, svert[2]);
-
-			vertex.push_back(v);
+			face.faceVertex[i].vIndex = std::stoi(svert[0]);
+			face.faceVertex[i].nIndex = std::stoi(svert[2]);
 		}
-		else if (vtype == 4)
+		else if (faceType == FaceType::TYPE_V_N_T)
 		{
-			Vertex v;
-			v.position = StringUtils::getElement(positions, svert[0]);
-			v.texCoord = StringUtils::getElement(texCoords, svert[1]);
-			v.normal = StringUtils::getElement(normals, svert[2]);
-
-			vertex.push_back(v);
+			face.faceVertex[i].vIndex = std::stoi(svert[0]);
+			face.faceVertex[i].tIndex = std::stoi(svert[1]);
+			face.faceVertex[i].nIndex = std::stoi(svert[2]);
 		}
 	}
 
-	if (noNormal)
-	{
-		int nSize = vertex.size();
-
-		Vec3f A = vertex[nSize - 2].position - vertex[nSize - 3].position;
-		Vec3f B = vertex[nSize - 1].position - vertex[nSize - 3].position;
-		Vec3f N = normalize(cross(A, B));
-
-		for (int i = nSize - 1; i >= int(nSize - sface.size()); i--)
-		{
-			vertex[i].normal = N;
-		}
-	}
+	faces.push_back(std::move(face));
 }
