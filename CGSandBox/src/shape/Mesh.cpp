@@ -27,6 +27,7 @@ Mesh::Mesh(const std::string& filePath, const std::shared_ptr<Material>& materia
 {
 	if (FileUtils::loadOBJFile(filePath, m_Vertices, m_Normals, m_TexCoords, m_Faces, m_FaceType))
 	{
+		updateVertex();
 		initTriangleList();
 	}
 }
@@ -150,38 +151,35 @@ void Mesh::loopSubDivide(int level)
 	if (level == 0)
 	{
 		// 
-
+		updateVertex();
+		initTriangleList();
 		return;
 	}
 
-	int nVertexSize = m_Vertices.size();
-	std::vector<SDVertex> vertices;
-	vertices.reserve(nVertexSize);
-
-	for (int i = 0; i < nVertexSize; i++)
+	// init vertex
+	std::vector<SDVertex*> vertices;
+	for (const auto& point : m_Vertices)
 	{
-		vertices.push_back(std::move(SDVertex(m_Vertices[i])));
+		vertices.push_back(new SDVertex(point));
 	}
 	
 	// init face
-	int nFaceSize = m_Faces.size();
-	std::vector<SDFace> faces;
-	faces.reserve(nFaceSize);
-
-	for (int i = 0; i < nFaceSize; i++)
+	int nVertexSize = m_Vertices.size();
+	std::vector<SDFace*> faces;
+	for (const auto& f : m_Faces)
 	{
-		faces.push_back(std::move(SDFace()));
-		SDFace* face = &faces[faces.size() - 1];
-
-		for (int j = 0; j < 3; j++)
+		SDFace* face = new SDFace();
+		for (int i = 0; i < 3; i++)
 		{
-			int idx = m_Faces[i].faceVertex[j].vIndex;
+			int idx = f.faceVertex[i].vIndex;
 			idx = (idx < 0) ? nVertexSize + idx : idx - 1;
 
-			SDVertex* vertex = &vertices[idx];
-			face->vertices[j] = vertex;
+			SDVertex* vertex = vertices[idx];
+			face->vertices[i] = vertex;
 			vertex->face = face;
 		}
+
+		faces.push_back(face);
 	}
 
 	// set neighbor face
@@ -191,20 +189,20 @@ void Mesh::loopSubDivide(int level)
 		for (int i = 0; i < 3; i++)
 		{
 			int nextIdx = NEXT(i);
-			SDEdge edge(face.vertices[i], face.vertices[nextIdx]);
+			SDEdge edge(face->vertices[i], face->vertices[nextIdx]);
 			
 			auto iter = edges.find(edge);
 			if (iter == edges.end())
 			{
-				edge.faces[0] = &face;
+				edge.faces[0] = face;
 				edge.face0index = i;
 				edges.insert(edge);
 			}
 			else
 			{
 				edge = *iter;
-				edge.faces[0]->neighborFaces[edge.face0index] = &face;
-				face.neighborFaces[i] = edge.faces[0];
+				edge.faces[0]->neighborFaces[edge.face0index] = face;
+				face->neighborFaces[i] = edge.faces[0];
 				edges.erase(edge);
 			}
 		}
@@ -213,127 +211,163 @@ void Mesh::loopSubDivide(int level)
 	// finish vertex
 	for (auto& vertex : vertices)
 	{
-		SDFace* face = vertex.face;
+		SDFace* face = vertex->face;
 		do 
 		{
-			face = face->getNextFace(&vertex);
-		} while (face && face != vertex.face);
+			face = face->getNextFace(vertex);
+		} while (face && face != vertex->face);
 
-		vertex.boundary = (face == nullptr);
+		vertex->boundary = (face == nullptr);
 	}
 
 	// prepare next subdivision
-	//std::vector<SDFace> f = faces;
-	//std::vector<SDVertex> v = vertices;
+	std::vector<SDFace*> f = faces;
+	std::vector<SDVertex*> v = vertices;
 
-	//for (int i = 0; i < level; i++)
-	//{
-		std::vector<SDFace> newFaces;
-		newFaces.reserve(faces.size() * 4);
+	for (int i = 0; i < level; i++)
+	{
+		std::vector<SDFace*> newFaces;
+		std::vector<SDVertex*> newVertices;
 
-		std::vector<SDVertex> newVertices;
-		newVertices.reserve(vertices.size());
-
-		for (auto& vertex : vertices)
+		for (auto& vertex : v)
 		{
-			SDVertex child;
-			child.boundary = vertex.boundary;
+			SDVertex* child = new SDVertex();
+			child->boundary = vertex->boundary;
 
-			vertex.child = &child;
-			newVertices.push_back(std::move(child));
+			vertex->child = child;
+			newVertices.push_back(child);
 		}
 
-		for (auto& face : faces)
+		for (auto& face : f)
 		{
-			for (int j = 0; j < 4; j++)
+			for (int i = 0; i < 4; i++)
 			{
-				SDFace child;
+				SDFace* child = new SDFace();
 				
-				face.children[j] = &child;
-				newFaces.push_back(std::move(child));
+				face->children[i] = child;
+				newFaces.push_back(child);
 			}
 		}
 
 		// update old vertex point
-		for (const auto& vertex : vertices)
+		for (const auto& vertex : v)
 		{
-			vertex.child->point = vertex.getOldAdjustPosition();
+			vertex->child->point = vertex->getOldAdjustPosition();
 		}
 
 		// compute new vertex point
-		std::map<SDEdge, SDVertex> edgeVerts;
-		for (const auto& face : newFaces)
+		std::map<SDEdge, SDVertex*> edgeVerts;
+		for (const auto& face : f)
 		{
-			for (int j = 0; j < 3; j++)
+			for (int i = 0; i < 3; i++)
 			{
-				SDEdge edge(face.vertices[j], face.vertices[NEXT(j)]);
+				SDEdge edge(face->vertices[i], face->vertices[NEXT(i)]);
 				auto iter = edgeVerts.find(edge);
 				if (iter == edgeVerts.end())
 				{
-					SDVertex vertex;
-					vertex.boundary = (face.neighborFaces[j] == nullptr);
-					vertex.face = face.children[3];
-					vertex.point = face.vertices[j]->getNewPosition(j);
+					SDVertex* vertex = new SDVertex();
+					newVertices.push_back(vertex);
+
+					vertex->boundary = (face->neighborFaces[i] == nullptr);
+					vertex->face = face->children[3];
+
+					if (vertex->boundary)
+					{
+						vertex->point = 0.5f * (edge.vertices[0]->point + edge.vertices[1]->point);
+					}
+					else
+					{
+						vertex->point = (3.0f / 8) * (edge.vertices[0]->point + edge.vertices[1]->point);
+
+						SDVertex* C = face->getOtherVertex(edge.vertices[0], edge.vertices[1]);
+						SDVertex* D = face->neighborFaces[i]->getOtherVertex(edge.vertices[0], edge.vertices[1]);
+						vertex->point += (1.0f / 8) * (C->point + D->point);
+					}
 
 					edgeVerts[edge] = vertex;
 				}
 			}
 		}
 
-		// update old vertex face point
-		for (auto& vertex : vertices)
+		// update old vertex face
+		for (auto& vertex : v)
 		{
-			int index = vertex.face->getVertexIndex(&vertex);
-			vertex.child->face = vertex.face->children[index];
+			int index = vertex->face->getVertexIndex(vertex);
+			vertex->child->face = vertex->face->children[index];
 		}
 
 		// update face neighbor 
-		for (const auto& face : faces)
+		for (const auto& face : f)
 		{
 			for (int j = 0; j < 3; j++)
 			{
-				face.children[3]->neighborFaces[j] = face.children[NEXT(j)];
-				face.children[j]->neighborFaces[NEXT(j)] = face.children[3];
+				face->children[3]->neighborFaces[j] = face->children[NEXT(j)];
+				face->children[j]->neighborFaces[NEXT(j)] = face->children[3];
 
-				SDFace* f2 = face.neighborFaces[j];
-				face.children[j]->neighborFaces[j] = f2 ? f2->children[f2->getVertexIndex(face.vertices[j])] : nullptr;
+				SDFace* f2 = face->neighborFaces[j];
+				face->children[j]->neighborFaces[j] = f2 ? f2->children[f2->getVertexIndex(face->vertices[j])] : nullptr;
 
-				f2 = face.neighborFaces[PREV(j)];
-				face.children[j]->neighborFaces[PREV(j)] = f2 ? f2->children[f2->getVertexIndex(face.vertices[j])] : nullptr;
+				f2 = face->neighborFaces[PREV(j)];
+				face->children[j]->neighborFaces[PREV(j)] = f2 ? f2->children[f2->getVertexIndex(face->vertices[j])] : nullptr;
 			}
 		}
 
 		// update face vertex
-		for (auto& face : faces)
+		for (auto& face : f)
 		{
 			for (int j = 0; j < 3; j++)
 			{
-				face.children[j]->vertices[j] = face.vertices[j]->child;
+				face->children[j]->vertices[j] = face->vertices[j]->child;
 
-				SDVertex& vertex = edgeVerts[SDEdge(face.vertices[j], face.vertices[NEXT(j)])];
-				face.children[j]->vertices[NEXT(j)] = &vertex;
-				face.children[NEXT(j)]->vertices[j] = &vertex;
-				face.children[3]->vertices[j] = &vertex;
+				SDVertex* vertex = edgeVerts[SDEdge(face->vertices[j], face->vertices[NEXT(j)])];
+				face->children[j]->vertices[NEXT(j)] = vertex;
+				face->children[NEXT(j)]->vertices[j] = vertex;
+				face->children[3]->vertices[j] = vertex;
 			}
 		}
 
-	//	f = newFaces;
-	//	v = newVertices;
-	//}
-	for (const auto& face : newFaces)
+		// clear f v
+		for (auto& vertex : v)
+		{
+			delete vertex;
+		}
+
+		for (auto& face : f)
+		{
+			delete face;
+		}
+
+		f = newFaces;
+		v = newVertices;
+	}
+
+	//
+	m_Vertex.clear();
+	for (const auto& face : f)
 	{
-		Vec3f A = face.vertices[1]->point - face.vertices[0]->point;
-		Vec3f B = face.vertices[2]->point - face.vertices[0]->point;
+		Vec3f A = face->vertices[1]->point - face->vertices[0]->point;
+		Vec3f B = face->vertices[2]->point - face->vertices[0]->point;
 		Vec3f N = normalize(cross(A, B));
 
 		for (int i = 0; i < 3; i++)
 		{
-			Vertex tmpV;
-			tmpV.position = face.vertices[i]->point;
-			tmpV.normal = N;
+			Vertex vertex;
+			vertex.position = face->vertices[i]->point;
+			vertex.normal = N;
 
-			m_Vertex.push_back(tmpV);
+			m_Vertex.push_back(vertex);
 		}
+	}
+
+	// clear f v
+	for (auto& vertex : v)
+	{
+		delete vertex;
+	}
+
+	for (auto& face : f)
+	{
+		delete face;
 	}
 
 	initTriangleList();

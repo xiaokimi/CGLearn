@@ -52,10 +52,11 @@ Vec3f SDVertex::getOldAdjustPosition() const
 	}
 	else
 	{
-		int valence = getValence();
+		//int valence = getValence();
+		int valence = points.size();
 		float beta = (valence == 3) ? 3.0f / 16 : 3.0f / (8 * valence);
 
-		Vec3f position = (1.0f - valence * beta) * point;
+		position = (1.0f - valence * beta) * point;
 		for (const auto& p : points)
 		{
 			position += beta * p;
@@ -92,28 +93,6 @@ void SDVertex::getSurroundPoints(std::vector<Vec3f>& points) const
 			points.push_back(f->getPrevVertex(this)->point);
 		}
 	}
-}
-
-Vec3f SDVertex::getNewPosition(int index) const
-{
-	SDVertex* B = face->getNextVertex(this);
-
-	Vec3f position;
-	if (boundary)
-	{
-		position = 0.5f * (point + B->point);
-	}
-	else
-	{
-		position = (3.0f / 8) * (point + B->point);
-
-		SDVertex* C = face->getOtherVertex(this, B);
-		SDVertex* D = face->neighborFaces[index]->getOtherVertex(this, B);
-
-		position += (1.0f / 8) * (C->point + D->point);
-	}
-
-	return position;
 }
 
 //

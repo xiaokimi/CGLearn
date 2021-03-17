@@ -17,12 +17,11 @@ int main()
 
 	//Vec3f lookfrom(278.0f, 273.0f, -800.0f);
 	//Vec3f lookat(278.0f, 273.0f, 0.0f);
-	Vec3f lookfrom(0.5f, 0.5f, 3.0f);
-	Vec3f lookat(0.5f, 0.5f, 0.0f);
+	Vec3f lookfrom(3.0f);
+	Vec3f lookat(0.0f);
 
 	Vec3f vup(0.0f, 1.0f, 0.0f);
-	//float vfov = 40.0f;
-	float vfov = 90.0f;
+	float vfov = 40.0f;
 	float aspect = float(width) / float(height);
 
 	Camera camera(lookfrom, lookat, vup, vfov, aspect);

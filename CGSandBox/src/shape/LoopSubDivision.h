@@ -17,8 +17,6 @@ public:
 	Vec3f getOldAdjustPosition() const;
 	void getSurroundPoints(std::vector<Vec3f>& points) const;
 
-	Vec3f getNewPosition(int index) const;
-
 public:
 	Vec3f point;
 	SDVertex* child;
